@@ -21,7 +21,7 @@ CONFIG_SCHEMA = fan.FAN_SCHEMA.extend(
         cv.Required(CONF_SWITCH_POWER_PIN): pins.gpio_output_pin_schema,
         cv.Required(CONF_LED_POWER_PIN): pins.gpio_input_pin_schema,
         cv.Required(CONF_LED_LOW_PIN): pins.gpio_input_pin_schema,
-        cv.Required(CONF_LED_MID_PIN): pins.gpio_input_pin_schema,
+        cv.Optional(CONF_LED_MID_PIN): pins.gpio_input_pin_schema,
         cv.Required(CONF_LED_HIGH_PIN): pins.gpio_input_pin_schema
     }
 ).extend(cv.polling_component_schema("1s"))
@@ -44,8 +44,9 @@ async def to_code(config):
     led_low_pin = await cg.gpio_pin_expression(config[CONF_LED_LOW_PIN])
     cg.add(var.set_led_low_pin(led_low_pin))
 
-    led_mid_pin = await cg.gpio_pin_expression(config[CONF_LED_MID_PIN])
-    cg.add(var.set_led_mid_pin(led_mid_pin))
+    if led_mid_pin_num := config.get(CONF_LED_MID_PIN):
+      led_mid_pin = await cg.gpio_pin_expression(led_mid_pin_num)
+      cg.add(var.set_led_mid_pin(led_mid_pin))
 
     led_high_pin = await cg.gpio_pin_expression(config[CONF_LED_HIGH_PIN])
     cg.add(var.set_led_high_pin(led_high_pin))

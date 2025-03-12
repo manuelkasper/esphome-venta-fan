@@ -15,12 +15,14 @@ void VentaFan::setup() {
   this->switch_power_pin_->setup();
   this->led_power_pin_->setup();
   this->led_low_pin_->setup();
-  this->led_mid_pin_->setup();
+  if (this->led_mid_pin_ != nullptr) {
+    this->led_mid_pin_->setup();
+  }
   this->led_high_pin_->setup();
 }
 
 fan::FanTraits VentaFan::get_traits() {
-  return fan::FanTraits(false, true, false, 3);
+  return fan::FanTraits(false, true, false, this->led_mid_pin_ != nullptr ? 3 : 2);
 }
 
 void VentaFan::update() {
@@ -36,10 +38,10 @@ void VentaFan::update() {
   int cur_speed = 0;
   if (!this->led_low_pin_->digital_read()) {
     cur_speed = 1;
-  } else if (!this->led_mid_pin_->digital_read()) {
+  } else if (this->led_mid_pin_ != nullptr && !this->led_mid_pin_->digital_read()) {
     cur_speed = 2;
   } else if (!this->led_high_pin_->digital_read()) {
-    cur_speed = 3;
+    cur_speed = this->led_mid_pin_ != nullptr ? 3 : 2;
   } else {
     if (cur_state) {
       // On but no speed lit means error must be lit
@@ -95,7 +97,7 @@ void VentaFan::write_state_() {
     led_pin = this->led_low_pin_;
     break;
   case 2:
-    led_pin = this->led_mid_pin_;
+    led_pin = this->led_mid_pin_ != nullptr ? this->led_mid_pin_ : this->led_high_pin_;
     break;
   case 3:
     led_pin = this->led_high_pin_;
@@ -138,8 +140,10 @@ void VentaFan::click_switch_(GPIOPin *output) {
 
 bool VentaFan::is_internal_error_() {
   // LED states are inverted
-  return (!this->led_power_pin_->digital_read() && this->led_low_pin_->digital_read() && 
-          this->led_mid_pin_->digital_read() && this->led_high_pin_->digital_read());
+  return (!this->led_power_pin_->digital_read() &&
+          this->led_low_pin_->digital_read() && 
+          (this->led_mid_pin_ != nullptr && this->led_mid_pin_->digital_read()) &&
+          this->led_high_pin_->digital_read());
 }
 
 }  // namespace venta_fan
